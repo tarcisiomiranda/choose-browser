@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 description = "A browser chooser for Linux - pick which browser opens your links"
 license = "MIT"
+repository = "https://github.com/tarcisiomiranda/choose-browser"
+homepage = "https://github.com/tarcisiomiranda/choose-browser"
+readme = "README.md"
 
 [dependencies]
 iced = { version = "0.13", features = ["image", "tokio"] }

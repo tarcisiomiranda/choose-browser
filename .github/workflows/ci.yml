@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MISE_PYTHON_COMPILE: "false"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Linux GUI build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libxkbcommon-dev \
+            libwayland-dev \
+            libx11-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxi-dev \
+            libgl1-mesa-dev
+
+      - name: Install tools
+        uses: jdx/mise-action@v4
+        with:
+          install_args: "rust python shellcheck"
+          cache: true
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Test release publisher
+        run: mise run release:check
+
+      - name: Run tests
+        run: mise run test
+
+      - name: Check formatting
+        run: mise run fmt:check
+
+      - name: Lint shell scripts
+        run: mise run lint:shell
+
+      - name: Test installer
+        run: mise run test:installer

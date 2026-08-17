@@ -1,0 +1,185 @@
+name: Release
+
+# Triggers:
+# - push of a SemVer tag (v0.1.0, v1.2.3-rc.1, …)
+# - manual "Run workflow" with the tag name (fallback when tag webhooks
+#   do not fire; the tag must already exist on the remote)
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing SemVer tag to publish, for example v1.2.3"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  MISE_PYTHON_COMPILE: "false"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Install Linux GUI build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libxkbcommon-dev \
+            libwayland-dev \
+            libx11-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxi-dev \
+            libgl1-mesa-dev
+
+      - name: Install tools
+        uses: jdx/mise-action@v4
+        with:
+          install_args: "rust python shellcheck"
+          cache: true
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Test release publisher
+        run: mise run release:check
+
+      - name: Validate release tag
+        run: mise exec -- python .github/scripts/release.py --validate-tag "$RELEASE_TAG"
+
+      - name: Run tests
+        run: mise run test
+
+      - name: Check formatting
+        run: mise run fmt:check
+
+      - name: Lint shell scripts
+        run: mise run lint:shell
+
+      - name: Test installer
+        run: mise run test:installer
+
+  build:
+    name: Build linux/${{ matrix.asset_arch }}
+    needs: test
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            asset_arch: amd64
+          - runner: ubuntu-24.04-arm
+            asset_arch: arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Install Linux GUI build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libxkbcommon-dev \
+            libwayland-dev \
+            libx11-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxi-dev \
+            libgl1-mesa-dev
+
+      - name: Install Rust
+        uses: jdx/mise-action@v4
+        with:
+          install_args: rust
+          cache: true
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-linux-${{ matrix.asset_arch }}
+
+      - name: Build
+        run: |
+          mkdir -p dist
+          mise exec -- cargo build --release --locked
+          cp target/release/choose-browser "dist/choose-browser-linux-${{ matrix.asset_arch }}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: choose-browser-linux-${{ matrix.asset_arch }}
+          path: dist/choose-browser-linux-${{ matrix.asset_arch }}
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Install Python
+        uses: jdx/mise-action@v4
+        with:
+          install_args: python
+          cache: true
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: choose-browser-linux-*
+          merge-multiple: true
+          path: release
+
+      - name: Generate checksums
+        working-directory: release
+        run: sha256sum choose-browser-linux-* > checksums.txt
+
+      - name: Publish release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        run: mise exec -- python .github/scripts/release.py
+
+      - name: Write summary
+        run: |
+          {
+            echo "## Release ${RELEASE_TAG}"
+            echo
+            echo "Published binaries:"
+            for file in release/choose-browser-linux-*; do
+              echo "- $(basename "$file")"
+            done
+            echo "- checksums.txt"
+          } >> "$GITHUB_STEP_SUMMARY"

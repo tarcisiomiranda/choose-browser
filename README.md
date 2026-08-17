@@ -3,33 +3,45 @@
 Linux desktop helper that intercepts `http`/`https` links and lets you pick
 which installed browser opens them.
 
-## Requirements
-
-- Linux with XDG desktop files
-- Rust 1.97.1 (via [mise](https://mise.jdx.dev/) or rustup)
-- `xdg-mime` / `xdg-settings` (usually from `xdg-utils`)
-- `wl-copy` (Wayland) or `xclip` (X11) to copy the URL from the chooser
-
 ## Install
 
-```bash
+```sh
+curl -fsSL https://raw.githubusercontent.com/tarcisiomiranda/choose-browser/main/install.sh | sh
+```
+
+The installer detects `linux/amd64` or `linux/arm64`, downloads the latest
+GitHub Release, verifies the SHA-256 checksum, installs the binary, and
+registers choose-browser as the default web browser.
+
+Pin a version or install directory:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/tarcisiomiranda/choose-browser/main/install.sh \
+  | CHOOSE_BROWSER_VERSION=v0.1.0 CHOOSE_BROWSER_INSTALL_DIR="$HOME/.local/bin" sh
+```
+
+Binary only (skip default-browser registration):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/tarcisiomiranda/choose-browser/main/install.sh \
+  | CHOOSE_BROWSER_SKIP_REGISTER=1 sh
+```
+
+As root, the binary goes to `/usr/local/bin`. Otherwise it uses `~/.local/bin`
+when `/usr/local/bin` is not writable.
+
+Override the GitHub repo with `CHOOSE_BROWSER_REPOSITORY=owner/name`.
+
+### From source
+
+```sh
 mise install
 mise run install
 ```
 
-Without mise:
-
-```bash
-cargo build --release
-./install.sh
-```
-
-This builds the release binary, copies it to `~/.local/bin/choose-browser`,
-writes `choose-browser.desktop`, and registers it as the default web browser.
-
 ## Usage
 
-```bash
+```sh
 choose-browser https://example.com
 choose-browser --list
 choose-browser --list-all
@@ -39,6 +51,8 @@ choose-browser --uninstall
 ```
 
 Shortcuts in the chooser: `1`–`9` open a browser, `c` copies the URL, `Esc` closes.
+
+Copying the URL needs `wl-copy` (Wayland) or `xclip` (X11).
 
 ## Config
 
@@ -57,18 +71,32 @@ the machine detected.
 
 ## Development
 
-```bash
+```sh
 mise install
 mise run check
 mise run test
 mise run lint
 mise run fmt
+mise run ci
 mise run dev -- https://example.com
 ```
 
+## Releases
+
+Push a SemVer tag (or run the **Release** workflow with that tag):
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+CI builds `choose-browser-linux-amd64` and `choose-browser-linux-arm64`, writes
+`checksums.txt`, and publishes a GitHub Release. Optional notes:
+`releases/<tag>.yaml` (see `releases/README.md`).
+
 ## Uninstall
 
-```bash
+```sh
 mise run uninstall
 ```
 

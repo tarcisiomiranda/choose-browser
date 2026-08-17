@@ -1,5 +1,7 @@
 /target
 /dist
+/release
+.github/scripts/__pycache__/
 
 # Secrets and local env
 .env

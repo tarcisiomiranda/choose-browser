@@ -1,0 +1,14 @@
+tag: v0.1.0
+
+highlights: |
+  First public release: pick which installed browser opens a link, with a
+  curl installer and GitHub Actions builds for Linux amd64 and arm64.
+
+features:
+  - "Chooser window for http/https links with number shortcuts and copy URL"
+  - "User config at ~/.config/choose-browser/config.toml (show_only, hidden, order)"
+  - "curl installer verifies SHA-256 and registers as the default browser"
+  - "GitHub Release assets: choose-browser-linux-amd64, choose-browser-linux-arm64, checksums.txt"
+
+changes:
+  - "mise.toml pins Rust 1.97.1 and exposes check/build/test/lint/install tasks"

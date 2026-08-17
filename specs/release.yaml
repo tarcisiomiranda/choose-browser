@@ -1,0 +1,66 @@
+spec: release
+title: "Esteira GitHub Release e instalador curl"
+status: done
+created: 2026-08-17
+updated: 2026-08-17
+goal: "Publicar binarios Linux via GitHub Actions e instalar com curl piped to sh"
+problem: "Sem artefatos de release o usuario teria de compilar Rust localmente"
+context: "Espelha /srv/stacker: release.py, test_release.py, release.yml, install.sh com checksum"
+behavior:
+  - "Tag SemVer vX.Y.Z dispara build e GitHub Release"
+  - "Assets choose-browser-linux-amd64, choose-browser-linux-arm64 e checksums.txt"
+  - "curl raw install.sh baixa o latest, verifica SHA-256 e registra o browser"
+requirements_functional:
+  - "release.py valida tag, checksums e publica assets"
+  - "workflow release.yml testa, builda e publica"
+  - "install.sh POSIX, Linux only, checksum obrigatorio"
+  - "install local via scripts/install-local.sh (mise run install)"
+  - "releases/<tag>.yaml vira o body do GitHub Release"
+requirements_non_functional:
+  - "Sem commit/push nesta sessao"
+  - "Sem secrets no workflow alem de GITHUB_TOKEN"
+constraints:
+  - "So Linux: iced/winit precisa de libs nativas"
+  - "install.sh tem de ser autonomo (curl puxa so esse ficheiro)"
+  - "Default repo tarcisiomiranda/choose-browser com override via env"
+implemented:
+  - "release.py e test_release.py adaptados do stacker"
+  - "ci.yml e release.yml"
+  - "install.sh curl+checksum Linux amd64/arm64"
+  - "scripts/install-local.sh e test-installer.sh"
+  - "mise tasks release:check lint:shell test:installer ci"
+  - "releases/v0.1.0.yaml e README de instalacao"
+pending:
+  - "Primeiro commit, remote GitHub e tag v0.1.0 (pedido do usuario)"
+steps:
+  - id: release-scripts
+    desc: "Adaptar release.py e testes do stacker"
+    status: done
+    verify: "mise run release:check"
+  - id: workflows
+    desc: "Adicionar ci.yml e release.yml"
+    status: done
+    verify: "test -f .github/workflows/release.yml -a -f .github/workflows/ci.yml"
+  - id: installer
+    desc: "install.sh curl+checksum e test-installer"
+    status: done
+    verify: "mise run test:installer"
+  - id: mise-docs
+    desc: "Tasks mise e README com curl install"
+    status: done
+    verify: "mise tasks --json"
+acceptance:
+  - desc: "mise run release:check passa"
+    status: done
+  - desc: "mise run test:installer passa"
+    status: done
+  - desc: "README documenta curl e tags SemVer"
+    status: done
+decisions:
+  - "Targets linux-amd64 e linux-arm64 em runners nativos (nao cross-compile iced)"
+  - "Repo default tarcisiomiranda/choose-browser (mesmo owner do stacker)"
+  - "mise run install continua a ser build local; curl usa o GitHub Release"
+  - "ci.yml em push/PR; release.yml so em tag v* ou workflow_dispatch"
+risks:
+  - "Runner ubuntu-24.04-arm pode falhar em repo privado; release exige os dois binarios"
+  - "Repo GitHub ainda nao existe; o curl so funciona depois do primeiro release"

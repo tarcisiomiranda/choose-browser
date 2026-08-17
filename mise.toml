@@ -1,5 +1,12 @@
+min_version = "2026.7.0"
+
+[settings]
+python.compile = false
+
 [tools]
 rust = "1.97.1"
+python = "3.12"
+shellcheck = "0.11"
 
 [tasks.check]
 description = "Type-check the crate"
@@ -30,13 +37,29 @@ description = "Check formatting without writing"
 run = "cargo fmt --all -- --check"
 
 [tasks.install]
-description = "Build and register as the default browser"
-run = "./install.sh"
+description = "Build from source and register as the default browser"
+run = "./scripts/install-local.sh"
 
 [tasks.uninstall]
 description = "Unregister and remove the installed binary"
 run = "./uninstall.sh"
 
 [tasks.clean]
-description = "Remove Cargo build artifacts"
-run = "cargo clean"
+description = "Remove Cargo and release artifacts"
+run = "cargo clean && rm -rf dist release"
+
+[tasks."release:check"]
+description = "Validate the GitHub release script"
+run = "python -m py_compile .github/scripts/release.py .github/scripts/test_release.py && python -m unittest discover -s .github/scripts -p 'test_*.py' && python .github/scripts/release.py --validate-tag v0.0.0"
+
+[tasks."lint:shell"]
+description = "Lint shell scripts"
+run = "shellcheck install.sh uninstall.sh scripts/*.sh"
+
+[tasks."test:installer"]
+description = "Test the release installer without network access"
+run = "scripts/test-installer.sh"
+
+[tasks.ci]
+description = "Local stand-in for GitHub CI"
+run = "mise run test && mise run release:check && mise run fmt:check && mise run lint:shell && mise run test:installer"

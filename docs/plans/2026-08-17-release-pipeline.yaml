@@ -1,0 +1,41 @@
+plan: 2026-08-17-release-pipeline
+title: "Esteira de release GitHub e curl installer"
+status: done
+created: 2026-08-17
+updated: 2026-08-17
+goal: "Espelhar a esteira do stacker para publicar binarios e instalar sem compilar"
+context: "Usuario pediu curl piped to bash e GitHub Actions, usando release.py/yml do /srv/stacker."
+scope:
+  - ".github/scripts/release.py e test_release.py"
+  - ".github/workflows/ci.yml e release.yml"
+  - "install.sh remoto com checksum"
+  - "scripts/install-local.sh e test-installer.sh"
+  - "releases/ notes YAML"
+  - "mise tasks release:check lint:shell test:installer"
+out_of_scope:
+  - "git commit / push / criar o remote"
+  - "darwin/windows"
+  - "publicar no crates.io"
+stages:
+  - id: spec
+    desc: "Spec release.yaml e este plano"
+    status: done
+  - id: port-scripts
+    desc: "Portar release.py do stacker"
+    status: done
+  - id: installer
+    desc: "Reescrever install.sh e testes"
+    status: done
+  - id: ci
+    desc: "Workflows e mise"
+    status: done
+  - id: validate
+    desc: "mise run release:check test:installer lint:shell"
+    status: done
+risks:
+  - "arm runner bloqueia o release se cair"
+rollback:
+  - "Remover .github/, reverter install.sh, restaurar mise tasks"
+decisions:
+  - "Linux amd64+arm64 nativos"
+  - "install.sh POSIX autonomo; local fica em scripts/install-local.sh"
