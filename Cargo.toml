@@ -1,0 +1,21 @@
+[package]
+name = "choose-browser"
+version = "0.1.0"
+edition = "2021"
+description = "A browser chooser for Linux - pick which browser opens your links"
+license = "MIT"
+
+[dependencies]
+iced = { version = "0.13", features = ["image", "tokio"] }
+freedesktop-desktop-entry = "0.7"
+freedesktop-icons = "0.2"
+dirs = "6"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+url = "2"
+image = "0.25"
+
+[profile.release]
+strip = true
+lto = true
+opt-level = "z"

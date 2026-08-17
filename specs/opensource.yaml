@@ -1,0 +1,74 @@
+spec: opensource
+title: "Preparar choose-browser para repositorio publico"
+status: done
+created: 2026-08-17
+updated: 2026-08-17
+goal: "Repo sem dados sensiveis, com mise e arquivos minimos de OSS (LICENSE, README, gitignore)"
+problem: "Repositorio ainda sem commit/remote; precisa de scan de vazamento e toolchain reproduzivel antes de publicar"
+context: "App Linux em Rust (iced) que escolhe o browser para um URL. Cargo.toml ja declara license MIT."
+behavior:
+  - "Nenhum secret, token, .env ou path pessoal entra no tree versionado"
+  - "mise.toml pinna rust e expoe tasks check/build/test/lint/fmt/install"
+  - "LICENSE MIT e README descrevem uso e instalacao"
+requirements_functional:
+  - "Scan de secrets no working tree"
+  - "gitignore cobre target, .env, leftovers de agentes e editores"
+  - "mise install + mise run check funcionam"
+  - "install.sh usa mise run build quando mise existe"
+requirements_non_functional:
+  - "Sem commit/push neste trabalho"
+  - "Sem inventar URL de remote ou autores com email"
+constraints:
+  - "Nao commitar .claude/settings.local.json nem .codex"
+  - "Deps so crates.io (ja e o caso)"
+  - "YAML da spec no formato restrito do speccheck"
+implemented:
+  - "Codigo fonte + install/uninstall"
+  - "Cargo.toml license = MIT"
+  - "Cargo.lock so crates.io"
+  - "Sem .env, emails, chaves ou paths /home no codigo"
+  - "Scan sem secrets no tree versionavel"
+  - "mise.toml rust 1.97.1 + tasks"
+  - "LICENSE MIT e README"
+  - ".gitignore cobre .env .codex .claude"
+  - "install.sh usa mise run build com fallback cargo"
+  - "mise run check e mise run test passam"
+pending:
+  - "Primeiro commit e remote publico (pedido do usuario)"
+  - "CI e crates.io (fora de escopo)"
+steps:
+  - id: scan-secrets
+    desc: "Auditar working tree por secrets, emails, paths pessoais e leftovers de agente"
+    status: done
+    verify: "test ! -e .env"
+  - id: gitignore
+    desc: "Ignorar target, .env, .codex, .claude e lixo de editor"
+    status: done
+    verify: "git check-ignore .env .codex"
+  - id: mise
+    desc: "Adicionar mise.toml com rust 1.97.1 e tasks de check/build/test/lint"
+    status: done
+    verify: "mise run check"
+  - id: license-readme
+    desc: "Adicionar LICENSE MIT e README minimo de OSS"
+    status: done
+    verify: "test -f LICENSE -a -f README.md"
+  - id: install-mise
+    desc: "install.sh faz build via mise quando o binario existe"
+    status: done
+    verify: "ag -Q 'mise run build' install.sh"
+acceptance:
+  - desc: "Scan nao encontra secrets no tree versionavel"
+    status: done
+  - desc: "mise tasks e mise run check passam"
+    status: done
+  - desc: "LICENSE e README existem na raiz"
+    status: done
+decisions:
+  - "Rust pinado em 1.97.1 (toolchain ativo desta maquina); nao inventar MSRV"
+  - "LICENSE MIT porque Cargo.toml ja declara MIT"
+  - "Nao adicionar CI, remote, authors/email nem rust-toolchain.toml"
+  - "install.sh faz fallback para cargo se mise nao existir"
+risks:
+  - "Publicar sem revisar o unstaged de src/main.rs (so UI, sem secret)"
+  - "Sem remote ainda; usuario precisa criar o GitHub/GitLab depois"

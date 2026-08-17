@@ -1,0 +1,42 @@
+[tools]
+rust = "1.97.1"
+
+[tasks.check]
+description = "Type-check the crate"
+run = "cargo check"
+
+[tasks.build]
+description = "Build the release binary"
+run = "cargo build --release"
+
+[tasks.dev]
+description = "Run the chooser (extra args go to the binary)"
+run = "cargo run --"
+
+[tasks.test]
+description = "Run tests"
+run = "cargo test"
+
+[tasks.lint]
+description = "Run clippy"
+run = "cargo clippy --all-targets -- -D warnings"
+
+[tasks.fmt]
+description = "Format the codebase"
+run = "cargo fmt --all"
+
+[tasks."fmt:check"]
+description = "Check formatting without writing"
+run = "cargo fmt --all -- --check"
+
+[tasks.install]
+description = "Build and register as the default browser"
+run = "./install.sh"
+
+[tasks.uninstall]
+description = "Unregister and remove the installed binary"
+run = "./uninstall.sh"
+
+[tasks.clean]
+description = "Remove Cargo build artifacts"
+run = "cargo clean"

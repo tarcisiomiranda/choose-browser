@@ -1,0 +1,38 @@
+plan: 2026-08-17-opensource
+title: "Scan de sensiveis e mise para publicar o repo"
+status: done
+created: 2026-08-17
+updated: 2026-08-17
+goal: "Deixar o tree seguro para OSS e padronizar builds no mise"
+context: "Repo sem commits, sem remote. Usuario pediu scan de dados sensiveis e configurar mise para abrir o projeto."
+scope:
+  - "Scan de secrets / leftovers"
+  - "mise.toml + tasks"
+  - ".gitignore"
+  - "LICENSE MIT + README"
+  - "install.sh com fallback mise"
+out_of_scope:
+  - "git commit / push / criar remote"
+  - "CI GitHub Actions"
+  - "Conta/crates.io publish"
+  - "Mudancas de comportamento do chooser"
+stages:
+  - id: spec
+    desc: "Criar spec opensource e este plano"
+    status: done
+  - id: scan
+    desc: "Auditar arquivos e lockfile"
+    status: done
+  - id: harden
+    desc: "gitignore, LICENSE, README, mise, install.sh"
+    status: done
+  - id: validate
+    desc: "mise run check e speccheck"
+    status: done
+risks:
+  - ".claude/settings.local.json tem paths /srv (ja ignorado no gitignore global)"
+rollback:
+  - "Remover mise.toml, LICENSE, README e reverter .gitignore/install.sh"
+decisions:
+  - "Pin rust 1.97.1 no mise, igual ao rustc ativo"
+  - "Nao commitar nesta sessao"
