@@ -3,6 +3,8 @@
 Linux desktop helper that intercepts `http`/`https` links and lets you pick
 which installed browser opens them.
 
+Repository: [`git@github.com:tarcisiomiranda/choose-browser.git`](https://github.com/tarcisiomiranda/choose-browser)
+
 ## Install
 
 ```sh
@@ -30,11 +32,11 @@ curl -fsSL https://raw.githubusercontent.com/tarcisiomiranda/choose-browser/main
 As root, the binary goes to `/usr/local/bin`. Otherwise it uses `~/.local/bin`
 when `/usr/local/bin` is not writable.
 
-Override the GitHub repo with `CHOOSE_BROWSER_REPOSITORY=owner/name`.
-
 ### From source
 
 ```sh
+git clone git@github.com:tarcisiomiranda/choose-browser.git
+cd choose-browser
 mise install
 mise run install
 ```
