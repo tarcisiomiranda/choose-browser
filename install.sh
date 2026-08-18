@@ -96,12 +96,16 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 
 printf 'Downloading %s (%s/%s)...\n' "$BINARY_NAME" "$target_os" "$target_arch"
-curl --proto '=https' --tlsv1.2 -fsSL \
+if ! curl --proto '=https' --tlsv1.2 -fsSL \
 	"${download_url}/${asset}" \
-	-o "${temporary_directory}/${asset}"
-curl --proto '=https' --tlsv1.2 -fsSL \
+	-o "${temporary_directory}/${asset}"; then
+	fail "no release asset at ${download_url}/${asset}"
+fi
+if ! curl --proto '=https' --tlsv1.2 -fsSL \
 	"${download_url}/checksums.txt" \
-	-o "${temporary_directory}/checksums.txt"
+	-o "${temporary_directory}/checksums.txt"; then
+	fail "no checksums.txt at ${download_url}/checksums.txt"
+fi
 
 expected_checksum=
 while read -r checksum filename _; do

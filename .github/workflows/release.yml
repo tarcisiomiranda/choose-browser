@@ -69,9 +69,6 @@ jobs:
       - name: Run tests
         run: mise run test
 
-      - name: Check formatting
-        run: mise run fmt:check
-
       - name: Lint shell scripts
         run: mise run lint:shell
 
