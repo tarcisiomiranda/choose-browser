@@ -30,8 +30,7 @@ implemented:
   - "Clipboard Windows via iced e registro por usuario"
   - "Instaladores PowerShell, tasks multiplataforma e matrizes de CI e release"
   - "README documenta instalacao Windows via curl.exe no PowerShell"
-pending:
-  - "Inspecao visual manual da janela; ferramenta de interface indisponivel e teste de inicializacao bloqueado pela revisao automatica"
+  - "README explica casos de uso e fluxo Windows com duas capturas reais do aplicativo"
 validation:
   - "mise run ci passou no Windows: 6 testes Rust, 14 testes do publicador e instalador PowerShell offline"
   - "mise run lint passou com warnings tratados como erros"
@@ -40,6 +39,7 @@ validation:
   - "--list-all detectou Google Chrome e Microsoft Edge nesta maquina"
   - "Scripts PowerShell passaram na analise de sintaxe"
   - "Pipeline curl.exe com Out-String preservou integralmente o instalador e passou no parser PowerShell"
+  - "Capturas reais Windows via window::screenshot do iced, conferidas visualmente com Chrome e Edge e com a ordem invertida por configuracao"
 steps:
   - id: native
     desc: "Implementar integracao nativa Windows"

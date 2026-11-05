@@ -1,8 +1,50 @@
 # choose-browser
 
-Pick which installed browser opens a link.
+Choose which browser opens each link.
+
+Set Choose Browser as your default browser once. When you open a link from
+another app, a small window lets you pick one of your installed browsers.
 
 Supports Linux and Windows 10/11 (x64).
+macOS integration is not implemented yet.
+
+## Why use it?
+
+- Open work links in Edge and personal links in Chrome, choosing each time.
+- Check a page in different browsers while developing or testing a website.
+- Keep several browsers in use without changing your default browser for every link.
+- Put your favorite browsers first and hide the ones you do not use.
+
+## How it works on Windows
+
+![Choose Browser on Windows showing a link and the installed Google Chrome and Microsoft Edge browsers](docs/screenshots/windows-chooser.png)
+
+1. [Install Choose Browser](#install-on-windows).
+2. In **Settings > Apps > Default apps**, select **Choose Browser** for **HTTP**
+   and **HTTPS**. The installer opens this settings page for you.
+3. Open a web link from another app, such as an email client or chat app.
+4. Click the browser you want, or press its number. That browser opens the link
+   and the chooser closes.
+
+The link appears at the top of the window. Press `c` or click **Copy** to copy
+it instead, or press `Esc` to close the chooser.
+
+| Shortcut | Action |
+| --- | --- |
+| `1`–`9` | Open the link in the corresponding browser |
+| `c` | Copy the link and close the chooser |
+| `Esc` | Close the chooser |
+
+To try the chooser directly after installing, run in PowerShell:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\ChooseBrowser\choose-browser.exe" https://example.com
+```
+
+These screenshots show the app running on Windows with Chrome and Edge
+installed. Your list depends on the browsers installed on your computer.
+If only one browser remains after applying your configuration, links open
+directly in that browser.
 
 ## Install on Linux
 
@@ -80,6 +122,19 @@ order = []
 ```
 
 IDs come from `--list-all`.
+
+For example, to put Edge before Chrome on Windows, change `order` in the
+existing `[browsers]` section:
+
+```toml
+order = ["Microsoft Edge", "Google Chrome"]
+```
+
+![Choose Browser on Windows with Microsoft Edge placed before Google Chrome using the browser order setting](docs/screenshots/windows-browser-order.png)
+
+Use `hidden` to remove browsers from the chooser, or `show_only` to include
+only specific browsers. Rules accept the IDs from `--list-all` or the visible
+browser names. Changes apply the next time the chooser opens.
 
 ## Build
 

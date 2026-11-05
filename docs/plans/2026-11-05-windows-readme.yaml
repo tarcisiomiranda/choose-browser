@@ -1,0 +1,35 @@
+plan: 2026-11-05-windows-readme
+title: "Demonstracao Windows no README"
+status: in_progress
+created: 2026-11-05
+updated: 2026-11-05
+goal: "Explicar a utilidade do seletor com capturas reais no Windows e publicar a documentacao"
+context: "Usuario pediu screenshots Windows, motivacao de uso, commit e push com Tarcisio Miranda e eu@tarcisio.me"
+scope:
+  - "Capturas reais da interface no Windows com URLs de exemplo"
+  - "README com motivos para usar, funcionamento, atalhos e demonstracao Windows"
+  - "Commit e push para origin/main com a identidade solicitada"
+out_of_scope:
+  - "Capturas Linux e macOS, que o usuario fornecera depois"
+  - "Implementar suporte macOS ou publicar release"
+stages:
+  - id: capture
+    desc: "Capturar e conferir imagens reais do seletor"
+    status: done
+  - id: readme
+    desc: "Explicar valor e funcionamento com as capturas"
+    status: done
+  - id: publish
+    desc: "Validar documentacao, commitar e enviar para origin/main"
+    status: in_progress
+risks:
+  - "Ferramenta de Computer Use falha ao inicializar; tentar captura nativa do iced"
+  - "macOS ainda nao tem integracao implementada no aplicativo"
+rollback:
+  - "Remover apenas as imagens e mudancas de documentacao deste trabalho"
+decisions:
+  - "Capturas restritas ao aplicativo, com URLs publicas de exemplo"
+  - "Nao alterar associacoes de navegador padrao para capturar a interface"
+  - "Manter README em ingles como o restante do repositorio"
+  - "Computer Use nao inicializou; capturas feitas pela API nativa window::screenshot do iced em um binario temporario"
+  - "Manifesto Cargo restaurado apos a captura; nenhuma alteracao no comportamento do produto"
