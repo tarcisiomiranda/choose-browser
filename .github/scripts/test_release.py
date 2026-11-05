@@ -191,6 +191,14 @@ class ChangelogCommitsTests(unittest.TestCase):
 
 
 class AssetValidationTests(unittest.TestCase):
+    def test_rejects_release_without_windows_binary(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            release_dir = Path(temporary_directory)
+            for filename in release.EXPECTED_BINARIES - {"choose-browser-windows-amd64.exe"}:
+                (release_dir / filename).write_bytes(b"binary")
+            with self.assertRaisesRegex(RuntimeError, "missing release binaries: choose-browser-windows-amd64.exe"):
+                release.collect_and_verify_assets(release_dir)
+
     def test_accepts_complete_release_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             release_dir = Path(temporary_directory)

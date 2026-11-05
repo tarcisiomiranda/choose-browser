@@ -1,0 +1,73 @@
+spec: windows
+title: "Choose Browser nativo no Windows"
+status: done
+created: 2026-11-04
+updated: 2026-11-05
+goal: "Oferecer no Windows o seletor de browsers e os mesmos comandos de configuracao"
+problem: "Descoberta por desktop files e comandos XDG nao funcionam no Windows"
+behavior:
+  - "Detectar browsers registrados em StartMenuInternet de HKCU e HKLM, incluindo visoes 32 e 64 bits"
+  - "Excluir o proprio chooser, entradas obsoletas e navegadores duplicados"
+  - "Preservar caminhos com espacos, flags do browser e URLs como um unico argumento"
+  - "Mostrar icones extraidos dos executaveis dos navegadores"
+  - "Copiar URLs pelo clipboard nativo do iced e encerrar apos concluir a copia"
+  - "--install registra HTTP e HTTPS em HKCU e abre Configuracoes para a escolha do padrao"
+  - "--uninstall remove somente o registro do chooser e preserva configuracao pessoal"
+  - "Configuracao Windows em APPDATA/choose-browser/config.toml com IDs de --list-all"
+  - "Instalacao local e por release via PowerShell sem exigir administrador"
+requirements_functional:
+  - "Manter suporte Linux com dependencias freedesktop limitadas ao Linux"
+  - "Instalador remoto verifica SHA-256 antes de copiar ou executar"
+  - "CI testa Windows e Linux e release publica choose-browser-windows-amd64.exe"
+requirements_non_functional:
+  - "Sem terminal extra ao abrir o chooser por associacao de links"
+  - "Testes nao alteram a escolha de navegador padrao do usuario"
+constraints:
+  - "Windows 10/11 x64; selecao de padrao pelas Configuracoes"
+  - "Sem execucao de shell para abrir URLs recebidas"
+implemented:
+  - "Descoberta pelo registro HKCU/HKLM, abertura sem shell e icones Win32"
+  - "Clipboard Windows via iced e registro por usuario"
+  - "Instaladores PowerShell, tasks multiplataforma e matrizes de CI e release"
+  - "README documenta instalacao Windows via curl.exe no PowerShell"
+pending:
+  - "Inspecao visual manual da janela; ferramenta de interface indisponivel e teste de inicializacao bloqueado pela revisao automatica"
+validation:
+  - "mise run ci passou no Windows: 6 testes Rust, 14 testes do publicador e instalador PowerShell offline"
+  - "mise run lint passou com warnings tratados como erros"
+  - "mise run build gerou executavel Windows otimizado de aproximadamente 8 MiB, preservado em dist"
+  - "mise run check -- --target x86_64-unknown-linux-gnu passou"
+  - "--list-all detectou Google Chrome e Microsoft Edge nesta maquina"
+  - "Scripts PowerShell passaram na analise de sintaxe"
+  - "Pipeline curl.exe com Out-String preservou integralmente o instalador e passou no parser PowerShell"
+steps:
+  - id: native
+    desc: "Implementar integracao nativa Windows"
+    status: done
+    verify: "mise run test"
+  - id: distribution
+    desc: "Atualizar instalacao, workflows e documentacao"
+    status: done
+    verify: "mise run release:check"
+  - id: validation
+    desc: "Executar testes e validacao local"
+    status: done
+    verify: "mise run ci"
+acceptance:
+  - desc: "Build e testes Rust no Windows passam"
+    status: done
+  - desc: "Lista de navegadores inclui instalacoes reais desta maquina"
+    status: done
+  - desc: "Testes cobrem URL com espacos, Unicode, flags e caracteres de shell"
+    status: done
+  - desc: "Registro e desregistro sao verificados em chave temporaria isolada"
+    status: done
+  - desc: "Publicador de release exige checksum do executavel Windows"
+    status: done
+decisions:
+  - "Usar winreg e windows-sys somente no target Windows"
+  - "Nao escrever UserChoice nem substituir associacoes de outros programas"
+  - "Releases Windows usam CRT estatico para dispensar instalacao de runtime C++"
+risks:
+  - "Executaveis sem assinatura podem exibir SmartScreen em downloads"
+  - "Browsers portateis sem registro no Windows nao sao descobertos automaticamente"

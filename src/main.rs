@@ -1,5 +1,8 @@
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+
 mod browser;
 mod config;
+mod platform;
 
 use browser::{detect_browsers, Browser};
 use config::{apply_browser_config, config_path, init_config_file, load_config};
@@ -14,19 +17,22 @@ use std::env;
 
 fn main() -> iced::Result {
     let args: Vec<String> = env::args().collect();
+    #[cfg(target_os = "windows")]
+    if args.iter().skip(1).any(|arg| arg.starts_with("--")) {
+        platform::attach_console();
+    }
     let all_browsers = detect_browsers();
     let config = load_config_or_default();
     let browsers = apply_browser_config(all_browsers.clone(), &config);
 
-    // Handle --install and --uninstall
     if args.len() > 1 {
         match args[1].as_str() {
             "--install" => {
-                install();
+                run_registration(platform::install);
                 return Ok(());
             }
             "--uninstall" => {
-                uninstall();
+                run_registration(platform::uninstall);
                 return Ok(());
             }
             "--config-path" => {
@@ -68,7 +74,10 @@ fn main() -> iced::Result {
     }
 
     if browsers.len() == 1 {
-        browsers[0].open_url(&url);
+        if let Err(error) = browsers[0].open_url(&url) {
+            eprintln!("Failed to open browser: {error}");
+            std::process::exit(1);
+        }
         return Ok(());
     }
 
@@ -115,13 +124,22 @@ impl App {
         match message {
             Message::BrowserSelected(idx) => {
                 if let Some(browser) = self.browsers.get(idx) {
-                    browser.open_url(&self.url);
+                    if let Err(error) = browser.open_url(&self.url) {
+                        eprintln!("Failed to open browser: {error}");
+                    }
                 }
                 iced::exit()
             }
             Message::CopyUrl => {
-                copy_to_clipboard(&self.url);
-                iced::exit()
+                #[cfg(target_os = "windows")]
+                {
+                    iced::clipboard::write(self.url.clone()).chain(iced::exit())
+                }
+                #[cfg(target_os = "linux")]
+                {
+                    platform::copy_to_clipboard(&self.url);
+                    iced::exit()
+                }
             }
             Message::CloseRequested => iced::exit(),
         }
@@ -131,7 +149,7 @@ impl App {
         let url_display = if self.url.is_empty() {
             "No URL".to_string()
         } else if self.url.len() > 42 {
-            format!("{}...", &self.url[..39])
+            format!("{}...", self.url.chars().take(39).collect::<String>())
         } else {
             self.url.clone()
         };
@@ -281,27 +299,6 @@ fn copy_button_style(_theme: &Theme, status: button::Status) -> button::Style {
     }
 }
 
-fn copy_to_clipboard(text: &str) {
-    // Try wl-copy (Wayland) first, then xclip (X11)
-    let result = std::process::Command::new("wl-copy").arg(text).status();
-
-    if result.is_ok() && result.unwrap().success() {
-        return;
-    }
-
-    let _ = std::process::Command::new("xclip")
-        .args(["-selection", "clipboard"])
-        .stdin(std::process::Stdio::piped())
-        .spawn()
-        .and_then(|mut child| {
-            use std::io::Write;
-            if let Some(ref mut stdin) = child.stdin {
-                stdin.write_all(text.as_bytes())?;
-            }
-            child.wait()
-        });
-}
-
 fn shortcut_message(key: keyboard::Key, modifiers: keyboard::Modifiers) -> Option<Message> {
     if modifiers.alt() || modifiers.command() || modifiers.logo() {
         return None;
@@ -357,113 +354,9 @@ fn print_browser_list(title: &str, browsers: &[Browser]) {
     }
 }
 
-fn install() {
-    let exe_path = env::current_exe().expect("Failed to get executable path");
-    let exe_str = exe_path.display();
-
-    let desktop_entry = format!(
-        r#"[Desktop Entry]
-Version=1.0
-Name=Choose Browser
-Comment=Choose which browser to open links with
-Exec={} %u
-Icon=choose-browser
-Terminal=false
-Type=Application
-Categories=Network;WebBrowser;
-MimeType=x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/about;x-scheme-handler/unknown;text/html;
-StartupNotify=false
-"#,
-        exe_str
-    );
-
-    let data_dir = dirs::data_dir().expect("Cannot find data directory");
-    let applications_dir = data_dir.join("applications");
-    std::fs::create_dir_all(&applications_dir).expect("Failed to create applications directory");
-
-    let desktop_path = applications_dir.join("choose-browser.desktop");
-    std::fs::write(&desktop_path, &desktop_entry).expect("Failed to write .desktop file");
-
-    println!("Installed .desktop file to: {}", desktop_path.display());
-
-    // Register as default browser using xdg-mime
-    let schemes = ["x-scheme-handler/http", "x-scheme-handler/https"];
-
-    for scheme in &schemes {
-        let status = std::process::Command::new("xdg-mime")
-            .args(["default", "choose-browser.desktop", scheme])
-            .status();
-
-        match status {
-            Ok(s) if s.success() => println!("Set default for {}", scheme),
-            _ => eprintln!("Warning: failed to set default for {}", scheme),
-        }
+fn run_registration(action: fn() -> std::io::Result<()>) {
+    if let Err(error) = action() {
+        eprintln!("Browser registration failed: {error}");
+        std::process::exit(1);
     }
-
-    // Also try xdg-settings for the default web browser
-    let status = std::process::Command::new("xdg-settings")
-        .args(["set", "default-web-browser", "choose-browser.desktop"])
-        .status();
-
-    match status {
-        Ok(s) if s.success() => println!("Set as default web browser via xdg-settings"),
-        _ => eprintln!("Warning: xdg-settings command failed (this is normal on some DEs)"),
-    }
-
-    // Update desktop database
-    let _ = std::process::Command::new("update-desktop-database")
-        .arg(applications_dir.to_str().unwrap())
-        .status();
-
-    println!("\nChoose Browser installed successfully!");
-    println!("It is now set as your default browser.");
-    println!("To uninstall, run: choose-browser --uninstall");
-}
-
-fn uninstall() {
-    let data_dir = dirs::data_dir().expect("Cannot find data directory");
-    let desktop_path = data_dir.join("applications/choose-browser.desktop");
-
-    // Check if we are the current default
-    let prev_browser = std::process::Command::new("xdg-settings")
-        .args(["get", "default-web-browser"])
-        .output()
-        .ok()
-        .and_then(|o| String::from_utf8(o.stdout).ok())
-        .unwrap_or_default()
-        .trim()
-        .to_string();
-
-    if desktop_path.exists() {
-        std::fs::remove_file(&desktop_path).expect("Failed to remove .desktop file");
-        println!("Removed .desktop file: {}", desktop_path.display());
-    } else {
-        println!("No .desktop file found at: {}", desktop_path.display());
-    }
-
-    // Reset to a known browser if we were the default
-    if prev_browser == "choose-browser.desktop" {
-        let fallbacks = [
-            "firefox.desktop",
-            "google-chrome.desktop",
-            "chromium-browser.desktop",
-        ];
-        for fallback in &fallbacks {
-            let status = std::process::Command::new("xdg-settings")
-                .args(["set", "default-web-browser", fallback])
-                .status();
-            if let Ok(s) = status {
-                if s.success() {
-                    println!("Reset default browser to: {}", fallback);
-                    break;
-                }
-            }
-        }
-    }
-
-    let _ = std::process::Command::new("update-desktop-database")
-        .arg(data_dir.join("applications").to_str().unwrap())
-        .status();
-
-    println!("\nChoose Browser uninstalled successfully!");
 }

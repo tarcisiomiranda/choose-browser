@@ -18,13 +18,18 @@ env:
 
 jobs:
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, windows-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
       - name: Install Linux GUI build deps
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -40,7 +45,7 @@ jobs:
       - name: Install tools
         uses: jdx/mise-action@v4
         with:
-          install_args: "rust python shellcheck"
+          install_args: ${{ runner.os == 'Windows' && 'rust python' || 'rust python shellcheck' }}
           cache: true
 
       - name: Cache cargo

@@ -1,0 +1,41 @@
+plan: 2026-11-04-windows
+title: "Suporte nativo ao Windows"
+status: done
+created: 2026-11-04
+updated: 2026-11-05
+goal: "Executar, instalar e distribuir o chooser em Windows e Linux"
+context: "O projeto usa iced multiplataforma, mas descoberta, clipboard e registro usam APIs Linux"
+scope:
+  - "Separar descoberta e registro por plataforma"
+  - "Detectar browsers pelo registro e abrir URLs preservando argumentos"
+  - "Clipboard e icones nativos no Windows"
+  - "Instaladores PowerShell, tasks mise e instrucoes Windows"
+  - "CI e releases Windows amd64"
+out_of_scope:
+  - "macOS e Windows ARM64 nativo"
+  - "Publicar release ou executar push"
+  - "Alterar silenciosamente o navegador padrao do usuario"
+stages:
+  - id: specification
+    desc: "Registrar comportamento e criterios do suporte Windows"
+    status: done
+  - id: native
+    desc: "Implementar descoberta, abertura, icones, clipboard e registro"
+    status: done
+  - id: distribution
+    desc: "Adicionar instalacao PowerShell, CI e binario de release"
+    status: done
+  - id: validation
+    desc: "Compilar, testar fluxos Windows e verificar distribuicao"
+    status: done
+risks:
+  - "Windows exige escolha explicita do app padrao nas Configuracoes"
+  - "Build local exige linker MSVC e Windows SDK"
+rollback:
+  - "Reverter apenas os arquivos desta implementacao; registros sao removidos por --uninstall"
+decisions:
+  - "Registro por usuario em HKCU, sem privilegios de administrador"
+  - "Preservar IDs e configuracao existentes no Linux"
+  - "Usar APIs Win32 para interpretar comandos e extrair icones"
+  - "Preservar executavel final em dist e limpar intermediarios pelo Cargo por falta de espaco"
+  - "Inspecao visual nao concluida: helper de interface falhou e revisao automatica bloqueou o teste de janela"

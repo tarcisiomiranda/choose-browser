@@ -39,26 +39,35 @@ run = "cargo fmt --all -- --check"
 [tasks.install]
 description = "Build from source and register as the default browser"
 run = "./scripts/install-local.sh"
+run_windows = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-local.ps1"
 
 [tasks.uninstall]
 description = "Unregister and remove the installed binary"
 run = "./uninstall.sh"
+run_windows = "powershell -NoProfile -ExecutionPolicy Bypass -File uninstall.ps1"
 
 [tasks.clean]
 description = "Remove Cargo and release artifacts"
 run = "cargo clean && rm -rf dist release"
+run_windows = "cargo clean"
 
 [tasks."release:check"]
 description = "Validate the GitHub release script"
-run = "python -m py_compile .github/scripts/release.py .github/scripts/test_release.py && python -m unittest discover -s .github/scripts -p 'test_*.py' && python .github/scripts/release.py --validate-tag v0.0.0"
+run = [
+  "python -m py_compile .github/scripts/release.py .github/scripts/test_release.py",
+  "python -m unittest discover -s .github/scripts -p \"test_*.py\"",
+  "python .github/scripts/release.py --validate-tag v0.0.0",
+]
 
 [tasks."lint:shell"]
 description = "Lint shell scripts"
 run = "shellcheck install.sh uninstall.sh scripts/*.sh"
+run_windows = []
 
 [tasks."test:installer"]
 description = "Test the release installer without network access"
 run = "scripts/test-installer.sh"
+run_windows = "cargo build --locked && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-installer.ps1"
 
 [tasks.ci]
 description = "Local stand-in for GitHub CI"

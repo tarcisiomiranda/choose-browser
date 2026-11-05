@@ -1,26 +1,28 @@
 spec: release
-title: "Esteira GitHub Release e instalador curl"
+title: "Esteira GitHub Release e instaladores Linux e Windows"
 status: done
 created: 2026-08-17
-updated: 2026-08-17
-goal: "Publicar binarios Linux via GitHub Actions e instalar com curl piped to sh"
+updated: 2026-11-05
+goal: "Publicar binarios Linux e Windows via GitHub Actions e instalar sem compilar"
 problem: "Sem artefatos de release o usuario teria de compilar Rust localmente"
 context: "Espelha /srv/stacker: release.py, test_release.py, release.yml, install.sh com checksum"
 behavior:
   - "Tag SemVer vX.Y.Z dispara build e GitHub Release"
-  - "Assets choose-browser-linux-amd64, choose-browser-linux-arm64 e checksums.txt"
+  - "Assets choose-browser-linux-amd64, choose-browser-linux-arm64, choose-browser-windows-amd64.exe e checksums.txt"
   - "curl raw install.sh baixa o latest, verifica SHA-256 e registra o browser"
+  - "install.ps1 baixa latest ou tag, verifica SHA-256 e registra por usuario no Windows"
 requirements_functional:
   - "release.py valida tag, checksums e publica assets"
   - "workflow release.yml testa, builda e publica"
   - "install.sh POSIX, Linux only, checksum obrigatorio"
   - "install local via scripts/install-local.sh (mise run install)"
+  - "install local Windows via scripts/install-local.ps1 (mise run install)"
   - "releases/<tag>.yaml vira o body do GitHub Release"
 requirements_non_functional:
   - "Sem commit/push nesta sessao"
   - "Sem secrets no workflow alem de GITHUB_TOKEN"
 constraints:
-  - "So Linux: iced/winit precisa de libs nativas"
+  - "Linux exige libs GUI nativas; Windows exige MSVC e Windows SDK apenas para compilar"
   - "install.sh tem de ser autonomo (curl puxa so esse ficheiro)"
   - "Default repo tarcisiomiranda/choose-browser com override via env"
 implemented:
@@ -30,6 +32,8 @@ implemented:
   - "scripts/install-local.sh e test-installer.sh"
   - "mise tasks release:check lint:shell test:installer ci"
   - "releases/v0.1.0.yaml e README de instalacao"
+  - "Matrizes CI e release com runner Windows x64 nativo"
+  - "Instalador PowerShell autonomo com verificacao SHA-256 e testes offline"
 pending:
   - "Primeiro commit, remote GitHub e tag v0.1.0 (pedido do usuario)"
 steps:
@@ -58,6 +62,7 @@ acceptance:
     status: done
 decisions:
   - "Targets linux-amd64 e linux-arm64 em runners nativos (nao cross-compile iced)"
+  - "Target windows-amd64 em windows-latest com o mesmo manifesto checksums.txt"
   - "Repo default tarcisiomiranda/choose-browser (mesmo owner do stacker)"
   - "mise run install continua a ser build local; curl usa o GitHub Release"
   - "ci.yml em push/PR; release.yml so em tag v* ou workflow_dispatch"

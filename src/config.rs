@@ -88,7 +88,7 @@ fn default_config_contents(browsers: &[Browser]) -> String {
     let mut contents = String::from(
         "# Choose Browser configuration\n\
          # Use `choose-browser --list-all` to see the available browser IDs.\n\
-         # You can reference either the desktop file ID or the visible browser name.\n\
+         # You can reference either the browser ID or the visible browser name.\n\
          \n\
          [browsers]\n\
          # If empty, all detected browsers may appear.\n\

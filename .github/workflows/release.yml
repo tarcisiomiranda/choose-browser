@@ -1,9 +1,5 @@
 name: Release
 
-# Triggers:
-# - push of a SemVer tag (v0.1.0, v1.2.3-rc.1, …)
-# - manual "Run workflow" with the tag name (fallback when tag webhooks
-#   do not fire; the tag must already exist on the remote)
 on:
   push:
     tags:
@@ -29,8 +25,12 @@ env:
 
 jobs:
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, windows-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -39,6 +39,7 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Install Linux GUI build deps
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -54,7 +55,7 @@ jobs:
       - name: Install tools
         uses: jdx/mise-action@v4
         with:
-          install_args: "rust python shellcheck"
+          install_args: ${{ runner.os == 'Windows' && 'rust python' || 'rust python shellcheck' }}
           cache: true
 
       - name: Cache cargo
@@ -64,6 +65,7 @@ jobs:
         run: mise run release:check
 
       - name: Validate release tag
+        shell: bash
         run: mise exec -- python .github/scripts/release.py --validate-tag "$RELEASE_TAG"
 
       - name: Run tests
@@ -76,7 +78,7 @@ jobs:
         run: mise run test:installer
 
   build:
-    name: Build linux/${{ matrix.asset_arch }}
+    name: Build ${{ matrix.asset }}
     needs: test
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -84,9 +86,14 @@ jobs:
       matrix:
         include:
           - runner: ubuntu-latest
-            asset_arch: amd64
+            asset: choose-browser-linux-amd64
+            binary: choose-browser
           - runner: ubuntu-24.04-arm
-            asset_arch: arm64
+            asset: choose-browser-linux-arm64
+            binary: choose-browser
+          - runner: windows-latest
+            asset: choose-browser-windows-amd64.exe
+            binary: choose-browser.exe
 
     steps:
       - name: Checkout
@@ -95,6 +102,7 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Install Linux GUI build deps
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -116,19 +124,22 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: release-linux-${{ matrix.asset_arch }}
+          shared-key: release-${{ matrix.asset }}
 
       - name: Build
+        shell: bash
+        env:
+          RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=+crt-static' || '' }}
         run: |
           mkdir -p dist
           mise exec -- cargo build --release --locked
-          cp target/release/choose-browser "dist/choose-browser-linux-${{ matrix.asset_arch }}"
+          cp "target/release/${{ matrix.binary }}" "dist/${{ matrix.asset }}"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: choose-browser-linux-${{ matrix.asset_arch }}
-          path: dist/choose-browser-linux-${{ matrix.asset_arch }}
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
           if-no-files-found: error
           retention-days: 7
 
@@ -155,13 +166,13 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: choose-browser-linux-*
+          pattern: choose-browser-*
           merge-multiple: true
           path: release
 
       - name: Generate checksums
         working-directory: release
-        run: sha256sum choose-browser-linux-* > checksums.txt
+        run: sha256sum choose-browser-* > checksums.txt
 
       - name: Publish release
         env:
@@ -175,7 +186,7 @@ jobs:
             echo "## Release ${RELEASE_TAG}"
             echo
             echo "Published binaries:"
-            for file in release/choose-browser-linux-*; do
+            for file in release/choose-browser-*; do
               echo "- $(basename "$file")"
             done
             echo "- checksums.txt"

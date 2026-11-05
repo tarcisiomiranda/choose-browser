@@ -25,6 +25,7 @@ TAG_PATTERN = re.compile(
 EXPECTED_BINARIES = {
     "choose-browser-linux-amd64",
     "choose-browser-linux-arm64",
+    "choose-browser-windows-amd64.exe",
 }
 
 
